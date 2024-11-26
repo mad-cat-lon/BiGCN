@@ -179,3 +179,106 @@ def load5foldData(obj):
            list(fold2_test),list(fold2_train),\
            list(fold3_test),list(fold3_train),\
            list(fold4_test), list(fold4_train)
+
+def load2foldData(obj):
+    if 'Twitter' in obj:
+        labelPath = os.path.join(cwd, "data/" + obj + "/" + obj + "_label_All.txt")
+        labelset_nonR, labelset_f, labelset_t, labelset_u = ['news', 'non-rumor'], ['false'], ['true'], ['unverified']
+        print("loading tree label")
+        NR, F, T, U = [], [], [], []
+        l1 = l2 = l3 = l4 = 0
+        labelDic = {}
+        for line in open(labelPath):
+            line = line.rstrip()
+            label, eid = line.split('\t')[0], line.split('\t')[2]
+            labelDic[eid] = label.lower()
+            if label in labelset_nonR:
+                NR.append(eid)
+                l1 += 1
+            if labelDic[eid] in labelset_f:
+                F.append(eid)
+                l2 += 1
+            if labelDic[eid] in labelset_t:
+                T.append(eid)
+                l3 += 1
+            if labelDic[eid] in labelset_u:
+                U.append(eid)
+                l4 += 1
+        print(len(labelDic))
+        print(l1, l2, l3, l4)
+        random.shuffle(NR)
+        random.shuffle(F)
+        random.shuffle(T)
+        random.shuffle(U)
+
+        fold0_x_test, fold1_x_test = [], []
+        fold0_x_train, fold1_x_train = [], []
+
+        leng1 = int(l1 * 0.5)
+        leng2 = int(l2 * 0.5)
+        leng3 = int(l3 * 0.5)
+        leng4 = int(l4 * 0.5)
+
+        fold0_x_test.extend(NR[0:leng1])
+        fold0_x_test.extend(F[0:leng2])
+        fold0_x_test.extend(T[0:leng3])
+        fold0_x_test.extend(U[0:leng4])
+        fold0_x_train.extend(NR[leng1:])
+        fold0_x_train.extend(F[leng2:])
+        fold0_x_train.extend(T[leng3:])
+        fold0_x_train.extend(U[leng4:])
+        fold1_x_test.extend(NR[leng1:])
+        fold1_x_test.extend(F[leng2:])
+        fold1_x_test.extend(T[leng3:])
+        fold1_x_test.extend(U[leng4:])
+        fold1_x_train.extend(NR[0:leng1])
+        fold1_x_train.extend(F[0:leng2])
+        fold1_x_train.extend(T[0:leng3])
+        fold1_x_train.extend(U[0:leng4])
+
+    elif obj == "Weibo":
+        labelPath = os.path.join(cwd, "data/Weibo/weibo_id_label.txt")
+        print("loading weibo label:")
+        F, T = [], []
+        l1 = l2 = 0
+        labelDic = {}
+        for line in open(labelPath):
+            line = line.rstrip()
+            eid, label = line.split(' ')[0], line.split(' ')[1]
+            labelDic[eid] = int(label)
+            if labelDic[eid] == 0:
+                F.append(eid)
+                l1 += 1
+            if labelDic[eid] == 1:
+                T.append(eid)
+                l2 += 1
+        print(len(labelDic))
+        print(l1, l2)
+        random.shuffle(F)
+        random.shuffle(T)
+
+        fold0_x_test, fold1_x_test = [], []
+        fold0_x_train, fold1_x_train = [], []
+
+        leng1 = int(l1 * 0.5)
+        leng2 = int(l2 * 0.5)
+
+        fold0_x_test.extend(F[0:leng1])
+        fold0_x_test.extend(T[0:leng2])
+        fold0_x_train.extend(F[leng1:])
+        fold0_x_train.extend(T[leng2:])
+        fold1_x_test.extend(F[leng1:])
+        fold1_x_test.extend(T[leng2:])
+        fold1_x_train.extend(F[0:leng1])
+        fold1_x_train.extend(T[0:leng2])
+
+    fold0_test = list(fold0_x_test)
+    shuffle(fold0_test)
+    fold0_train = list(fold0_x_train)
+    shuffle(fold0_train)
+    fold1_test = list(fold1_x_test)
+    shuffle(fold1_test)
+    fold1_train = list(fold1_x_train)
+    shuffle(fold1_train)
+
+    return list(fold0_test), list(fold0_train), list(fold1_test), list(fold1_train)
