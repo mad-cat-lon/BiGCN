@@ -34,32 +34,32 @@ def loadTree(dataname):
 ################################# load data ###################################
 def loadData(dataname, treeDic,fold_x_train,fold_x_test,droprate):
     data_path=os.path.join(cwd, 'data', dataname+'graph')
-    print("loading train set", )
+    # print("loading train set", )
     traindata_list = GraphDataset(fold_x_train, treeDic, droprate=droprate,data_path= data_path)
-    print("train no:", len(traindata_list))
-    print("loading test set", )
+    # print("train no:", len(traindata_list))
+    # print("loading test set", )
     testdata_list = GraphDataset(fold_x_test, treeDic,data_path= data_path)
-    print("test no:", len(testdata_list))
+    # print("test no:", len(testdata_list))
     return traindata_list, testdata_list
 
 def loadUdData(dataname, treeDic,fold_x_train,fold_x_test,droprate):
     data_path=os.path.join(cwd, 'data',dataname+'graph')
-    print("loading train set", )
+    # print("loading train set", )
     traindata_list = UdGraphDataset(fold_x_train, treeDic, droprate=droprate,data_path= data_path)
-    print("train no:", len(traindata_list))
-    print("loading test set", )
+    # print("train no:", len(traindata_list))
+    # print("loading test set", )
     testdata_list = UdGraphDataset(fold_x_test, treeDic,data_path= data_path)
-    print("test no:", len(testdata_list))
+    # print("test no:", len(testdata_list))
     return traindata_list, testdata_list
 
 def loadBiData(dataname, treeDic, fold_x_train, fold_x_test, TDdroprate,BUdroprate):
     data_path = os.path.join(cwd,'data', dataname + 'graph')
-    print("loading train set", )
+    # print("loading train set", )
     traindata_list = BiGraphDataset(fold_x_train, treeDic, tddroprate=TDdroprate, budroprate=BUdroprate, data_path=data_path)
-    print("train no:", len(traindata_list))
-    print("loading test set", )
+    # print("train no:", len(traindata_list))
+    # print("loading test set", )
     testdata_list = BiGraphDataset(fold_x_test, treeDic, data_path=data_path)
-    print("test no:", len(testdata_list))
+    # print("test no:", len(testdata_list))
     return traindata_list, testdata_list
 
 

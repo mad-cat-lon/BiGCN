@@ -78,6 +78,7 @@ class BUrumorGCN(th.nn.Module):
         x= scatter_mean(x, data.batch, dim=0)
         return x
 
+
 class Net(th.nn.Module):
     def __init__(self,in_feats,hid_feats,out_feats):
         super(Net, self).__init__()
@@ -112,8 +113,8 @@ def train_GCN(treeDic, x_test, x_train,TDdroprate,BUdroprate,lr, weight_decay,pa
     early_stopping = EarlyStopping(patience=patience, verbose=True)
     for epoch in range(n_epochs):
         traindata_list, testdata_list = loadBiData(dataname, treeDic, x_train, x_test, TDdroprate,BUdroprate)
-        train_loader = DataLoader(traindata_list, batch_size=batchsize, shuffle=True, num_workers=5)
-        test_loader = DataLoader(testdata_list, batch_size=batchsize, shuffle=True, num_workers=5)
+        train_loader = DataLoader(traindata_list, batch_size=batchsize, shuffle=True, num_workers=5, pin_memory=True)
+        test_loader = DataLoader(testdata_list, batch_size=batchsize, shuffle=True, num_workers=5, pin_memory=True)
         avg_loss = []
         avg_acc = []
         batch_idx = 0
@@ -198,85 +199,108 @@ def train_GCN(treeDic, x_test, x_train,TDdroprate,BUdroprate,lr, weight_decay,pa
             break
     return train_losses , val_losses ,train_accs, val_accs,accs,F1,F2,F3,F4
 
-lr=0.0005
-weight_decay=1e-4
-patience=10
-n_epochs=200
-batchsize=128
-TDdroprate=0.2
-BUdroprate=0.2
-datasetname=sys.argv[1] #"Twitter15"、"Twitter16"
-iterations=int(sys.argv[2])
-model="GCN"
-device = th.device('cuda:0' if th.cuda.is_available() else 'cpu')
-test_accs = []
-NR_F1 = []
-FR_F1 = []
-TR_F1 = []
-UR_F1 = []
-for iter in range(iterations):
-    fold0_x_test, fold0_x_train, \
-    fold1_x_test,  fold1_x_train,  \
-    fold2_x_test, fold2_x_train, \
-    fold3_x_test, fold3_x_train, \
-    fold4_x_test,fold4_x_train = load5foldData(datasetname)
-    treeDic=loadTree(datasetname)
-    train_losses, val_losses, train_accs, val_accs0, accs0, F1_0, F2_0, F3_0, F4_0 = train_GCN(treeDic,
-                                                                                               fold0_x_test,
-                                                                                               fold0_x_train,
-                                                                                               TDdroprate,BUdroprate,
-                                                                                               lr, weight_decay,
-                                                                                               patience,
-                                                                                               n_epochs,
-                                                                                               batchsize,
-                                                                                               datasetname,
-                                                                                               iter)
-    train_losses, val_losses, train_accs, val_accs1, accs1, F1_1, F2_1, F3_1, F4_1 = train_GCN(treeDic,
-                                                                                               fold1_x_test,
-                                                                                               fold1_x_train,
-                                                                                               TDdroprate,BUdroprate, lr,
-                                                                                               weight_decay,
-                                                                                               patience,
-                                                                                               n_epochs,
-                                                                                               batchsize,
-                                                                                               datasetname,
-                                                                                               iter)
-    train_losses, val_losses, train_accs, val_accs2, accs2, F1_2, F2_2, F3_2, F4_2 = train_GCN(treeDic,
-                                                                                               fold2_x_test,
-                                                                                               fold2_x_train,
-                                                                                               TDdroprate,BUdroprate, lr,
-                                                                                               weight_decay,
-                                                                                               patience,
-                                                                                               n_epochs,
-                                                                                               batchsize,
-                                                                                               datasetname,
-                                                                                               iter)
-    train_losses, val_losses, train_accs, val_accs3, accs3, F1_3, F2_3, F3_3, F4_3 = train_GCN(treeDic,
-                                                                                               fold3_x_test,
-                                                                                               fold3_x_train,
-                                                                                               TDdroprate,BUdroprate, lr,
-                                                                                               weight_decay,
-                                                                                               patience,
-                                                                                               n_epochs,
-                                                                                               batchsize,
-                                                                                               datasetname,
-                                                                                               iter)
-    train_losses, val_losses, train_accs, val_accs4, accs4, F1_4, F2_4, F3_4, F4_4 = train_GCN(treeDic,
-                                                                                               fold4_x_test,
-                                                                                               fold4_x_train,
-                                                                                               TDdroprate,BUdroprate, lr,
-                                                                                               weight_decay,
-                                                                                               patience,
-                                                                                               n_epochs,
-                                                                                               batchsize,
-                                                                                               datasetname,
-                                                                                               iter)
-    test_accs.append((accs0+accs1+accs2+accs3+accs4)/5)
-    NR_F1.append((F1_0+F1_1+F1_2+F1_3+F1_4)/5)
-    FR_F1.append((F2_0 + F2_1 + F2_2 + F2_3 + F2_4) / 5)
-    TR_F1.append((F3_0 + F3_1 + F3_2 + F3_3 + F3_4) / 5)
-    UR_F1.append((F4_0 + F4_1 + F4_2 + F4_3 + F4_4) / 5)
-print("Total_Test_Accuracy: {:.4f}|NR F1: {:.4f}|FR F1: {:.4f}|TR F1: {:.4f}|UR F1: {:.4f}".format(
-    sum(test_accs) / iterations, sum(NR_F1) /iterations, sum(FR_F1) /iterations, sum(TR_F1) / iterations, sum(UR_F1) / iterations))
+if __name__ == "__main__":
+    lr=0.0005
+    weight_decay=1e-4
+    patience=10
+    n_epochs=10
+    batchsize=64
+    TDdroprate=0.2
+    BUdroprate=0.2
+    datasetname=sys.argv[1] #"Twitter15"、"Twitter16"
+    iterations=int(sys.argv[2])
+    model="GCN"
+    device = th.device('cuda:0' if th.cuda.is_available() else 'cpu')
+    print(device)
+    test_accs = []
+    NR_F1 = []
+    FR_F1 = []
+    TR_F1 = []
+    UR_F1 = []
+    for iter in range(iterations):
+        fold0_x_test, fold0_x_train, fold1_x_test, fold1_x_train = load2foldData(datasetname)
+        treeDic = loadTree(datasetname)
+
+        # Training on Fold 0
+        train_losses, val_losses, train_accs, val_accs0, accs0, F1_0, F2_0, F3_0, F4_0 = train_GCN(
+            treeDic, fold0_x_test, fold0_x_train, TDdroprate, BUdroprate, lr, weight_decay, patience,
+            n_epochs, batchsize, datasetname, iter)
+
+        # Training on Fold 1
+        train_losses, val_losses, train_accs, val_accs1, accs1, F1_1, F2_1, F3_1, F4_1 = train_GCN(
+            treeDic, fold1_x_test, fold1_x_train, TDdroprate, BUdroprate, lr, weight_decay, patience,
+            n_epochs, batchsize, datasetname, iter)
+
+        test_accs.append((accs0 + accs1) / 2)
+        NR_F1.append((F1_0 + F1_1) / 2)
+        FR_F1.append((F2_0 + F2_1) / 2)
+        TR_F1.append((F3_0 + F3_1) / 2)
+        UR_F1.append((F4_0 + F4_1) / 2)
+    print("Total_Test_Accuracy: {:.4f}|NR F1: {:.4f}|FR F1: {:.4f}|TR F1: {:.4f}|UR F1: {:.4f}".format(
+        sum(test_accs) / iterations, sum(NR_F1) / iterations, sum(FR_F1) / iterations, sum(TR_F1) / iterations, sum(UR_F1) / iterations))
+    # for iter in range(iterations):
+    #     fold0_x_test, fold0_x_train, \
+    #     fold1_x_test,  fold1_x_train,  \
+    #     fold2_x_test, fold2_x_train, \
+    #     fold3_x_test, fold3_x_train, \
+    #     fold4_x_test,fold4_x_train = load5foldData(datasetname)
+    #     treeDic=loadTree(datasetname)
+    #     train_losses, val_losses, train_accs, val_accs0, accs0, F1_0, F2_0, F3_0, F4_0 = train_GCN(treeDic,
+    #                                                                                             fold0_x_test,
+    #                                                                                             fold0_x_train,
+    #                                                                                             TDdroprate,BUdroprate,
+    #                                                                                             lr, weight_decay,
+    #                                                                                             patience,
+    #                                                                                             n_epochs,
+    #                                                                                             batchsize,
+    #                                                                                             datasetname,
+    #                                                                                             iter)
+    #     train_losses, val_losses, train_accs, val_accs1, accs1, F1_1, F2_1, F3_1, F4_1 = train_GCN(treeDic,
+    #                                                                                             fold1_x_test,
+    #                                                                                             fold1_x_train,
+    #                                                                                             TDdroprate,BUdroprate, lr,
+    #                                                                                             weight_decay,
+    #                                                                                             patience,
+    #                                                                                             n_epochs,
+    #                                                                                             batchsize,
+    #                                                                                             datasetname,
+    #                                                                                             iter)
+    #     train_losses, val_losses, train_accs, val_accs2, accs2, F1_2, F2_2, F3_2, F4_2 = train_GCN(treeDic,
+    #                                                                                             fold2_x_test,
+    #                                                                                             fold2_x_train,
+    #                                                                                             TDdroprate,BUdroprate, lr,
+    #                                                                                             weight_decay,
+    #                                                                                             patience,
+    #                                                                                             n_epochs,
+    #                                                                                             batchsize,
+    #                                                                                             datasetname,
+    #                                                                                             iter)
+    #     train_losses, val_losses, train_accs, val_accs3, accs3, F1_3, F2_3, F3_3, F4_3 = train_GCN(treeDic,
+    #                                                                                             fold3_x_test,
+    #                                                                                             fold3_x_train,
+    #                                                                                             TDdroprate,BUdroprate, lr,
+    #                                                                                             weight_decay,
+    #                                                                                             patience,
+    #                                                                                             n_epochs,
+    #                                                                                             batchsize,
+    #                                                                                             datasetname,
+    #                                                                                             iter)
+    #     train_losses, val_losses, train_accs, val_accs4, accs4, F1_4, F2_4, F3_4, F4_4 = train_GCN(treeDic,
+    #                                                                                             fold4_x_test,
+    #                                                                                             fold4_x_train,
+    #                                                                                             TDdroprate,BUdroprate, lr,
+    #                                                                                             weight_decay,
+    #                                                                                             patience,
+    #                                                                                             n_epochs,
+    #                                                                                             batchsize,
+    #                                                                                             datasetname,
+    #                                                                                             iter)
+    #     test_accs.append((accs0+accs1+accs2+accs3+accs4)/5)
+    #     NR_F1.append((F1_0+F1_1+F1_2+F1_3+F1_4)/5)
+    #     FR_F1.append((F2_0 + F2_1 + F2_2 + F2_3 + F2_4) / 5)
+    #     TR_F1.append((F3_0 + F3_1 + F3_2 + F3_3 + F3_4) / 5)
+    #     UR_F1.append((F4_0 + F4_1 + F4_2 + F4_3 + F4_4) / 5)
+    # print("Total_Test_Accuracy: {:.4f}|NR F1: {:.4f}|FR F1: {:.4f}|TR F1: {:.4f}|UR F1: {:.4f}".format(
+    #     sum(test_accs) / iterations, sum(NR_F1) /iterations, sum(FR_F1) /iterations, sum(TR_F1) / iterations, sum(UR_F1) / iterations))
 
 
