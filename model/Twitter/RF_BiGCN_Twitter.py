@@ -173,15 +173,17 @@ class RFBoostedBiGCN(th.nn.Module):
             # print("Expected FCN input size:", fcn.weight.shape)  
             gcn_output_transformed = self.gcn_to_fcn_adapter(gcn_output)
             fcn_output = fcn(gcn_output_transformed)
-            combined_output = gcn_output_transformed * fcn_output
-            classifier_outputs.append(combined_output)
+
+            # Align output of BiGCN outputs to FCN as described in RF-GNN
+            aligned_output = gcn_output_transformed * fcn_output
+            classifier_outputs.append(aligned_output)
 
         final_representation = th.cat(classifier_outputs, dim=1)
         return F.log_softmax(self.final_fc(final_representation), dim=1)
     
 
-def train_RFBoostedBiGCN(treeDic, x_test, x_train, TDdroprate, BUdroprate, lr, weight_decay, patience, n_epochs, batch_size, dataname, iter, node_sampling_prob, feature_selection_prob, edge_dropout_prob):
-    model = RFBoostedBiGCN(in_feats=5000, hid_feats=64, out_feats=64, node_sampling_prob=node_sampling_prob, feature_selection_prob=feature_selection_prob, edge_dropout_prob=edge_dropout_prob, num_classifiers=3).to(device)
+def train_RFBoostedBiGCN(treeDic, x_test, x_train, TDdroprate, BUdroprate, lr, weight_decay, patience, n_epochs, batch_size, dataname, iter, node_sampling_prob, feature_selection_prob, edge_dropout_prob, num_classifiers):
+    model = RFBoostedBiGCN(in_feats=5000, hid_feats=64, out_feats=64, node_sampling_prob=node_sampling_prob, feature_selection_prob=feature_selection_prob, edge_dropout_prob=edge_dropout_prob, num_classifiers=num_classifiers).to(device)
     optimizer = th.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     model.train()
     train_losses, val_losses, train_accs, val_accs = [], [], [], []
@@ -228,19 +230,30 @@ def train_RFBoostedBiGCN(treeDic, x_test, x_train, TDdroprate, BUdroprate, lr, w
                 out_labels = model(Batch_data)
                 loss = F.nll_loss(out_labels, Batch_data.y)
                 temp_val_losses.append(loss.item())
-                _, val_pred = out_labels.max(dim=-1)
+                _, val_pred = out_labels.max(dim=1)
                 val_acc = (val_pred.eq(Batch_data.y).sum().item() / len(Batch_data.y))
-                Acc_all, Acc1, Prec1, Recll1, F1, Acc2, Prec2, Recll2, F2, Acc3, Prec3, Recll3, F3, Acc4, Prec4, Recll4, F4 = evaluation4class(
-                val_pred, Batch_data.y)
-            temp_val_Acc_all.append(Acc_all), temp_val_Acc1.append(Acc1), temp_val_Prec1.append(
-                Prec1), temp_val_Recll1.append(Recll1), temp_val_F1.append(F1), \
-            temp_val_Acc2.append(Acc2), temp_val_Prec2.append(Prec2), temp_val_Recll2.append(
-                Recll2), temp_val_F2.append(F2), \
-            temp_val_Acc3.append(Acc3), temp_val_Prec3.append(Prec3), temp_val_Recll3.append(
-                Recll3), temp_val_F3.append(F3), \
-            temp_val_Acc4.append(Acc4), temp_val_Prec4.append(Prec4), temp_val_Recll4.append(
-                Recll4), temp_val_F4.append(F4)
-            temp_val_accs.append(val_acc)
+                Acc_all, Acc1, Prec1, Recll1, F1, Acc2, Prec2, Recll2, F2, Acc3, Prec3, Recll3, F3, Acc4, Prec4, Recll4, F4 = evaluation4class(val_pred, Batch_data.y)
+                temp_val_Acc_all.append(Acc_all)
+                temp_val_Acc1.append(Acc1)
+                temp_val_Prec1.append(Prec1)
+                temp_val_Recll1.append(Recll1)
+                temp_val_F1.append(F1)
+
+                temp_val_Acc2.append(Acc2)
+                temp_val_Prec2.append(Prec2)
+                temp_val_Recll2.append(Recll2)
+                temp_val_F2.append(F2)
+
+                temp_val_Acc3.append(Acc3)
+                temp_val_Prec3.append(Prec3)
+                temp_val_Recll3.append(Recll3)
+                temp_val_F3.append(F3)
+                temp_val_Acc4.append(Acc4)
+                temp_val_Prec4.append(Prec4)
+                temp_val_Recll4.append(Recll4)
+                temp_val_F4.append(F4)
+                
+                temp_val_accs.append(val_acc)
 
         val_losses.append(np.mean(temp_val_losses))
         val_accs.append(np.mean(temp_val_accs))
@@ -305,14 +318,15 @@ def train_RFBoostedBiGCN(treeDic, x_test, x_train, TDdroprate, BUdroprate, lr, w
 if __name__ == "__main__":
     lr=0.0005
     weight_decay=1e-4
-    patience=10
-    n_epochs=10
+    patience=5
+    n_epochs=20
     batch_size=64
     TDdroprate=0.2
     BUdroprate=0.2
-    node_sampling_prob = 0.8
-    feature_selection_prob = 0.8
-    edge_dropout_prob = 0.5
+    node_sampling_prob = 0.5
+    feature_selection_prob = 0.7
+    edge_dropout_prob = 0.1
+    num_classifiers = 3
     datasetname=sys.argv[1] #"Twitter15"、"Twitter16"
     iterations=int(sys.argv[2])
     device = th.device('cuda:0' if th.cuda.is_available() else 'cpu')
@@ -338,6 +352,7 @@ if __name__ == "__main__":
             "node_sampling_prob": node_sampling_prob,
             "feature_selection_prob": feature_selection_prob,
             "edge_dropout_prob": edge_dropout_prob,
+            "num_classifiers": num_classifiers
         }
     )
     fold_losses = []
@@ -348,7 +363,8 @@ if __name__ == "__main__":
         # Training on Fold 0
         train_losses, val_losses, train_accs, val_accs0, accs0, F1_0, F2_0, F3_0, F4_0 = train_RFBoostedBiGCN(
             treeDic, fold0_x_test, fold0_x_train, TDdroprate, BUdroprate, lr, weight_decay, patience,
-            n_epochs, batch_size, datasetname, iter, node_sampling_prob, feature_selection_prob, edge_dropout_prob)
+            n_epochs, batch_size, datasetname, iter, node_sampling_prob, feature_selection_prob, edge_dropout_prob, num_classifiers)
+
         wandb.log({
             f"fold_0_iter_{iter}_train_loss": np.mean(train_losses),
             f"fold_0_iter_{iter}_val_loss": np.mean(val_losses),
@@ -363,7 +379,7 @@ if __name__ == "__main__":
         # Training on Fold 1
         train_losses, val_losses, train_accs, val_accs1, accs1, F1_1, F2_1, F3_1, F4_1 = train_RFBoostedBiGCN (
             treeDic, fold1_x_test, fold1_x_train, TDdroprate, BUdroprate, lr, weight_decay, patience,
-            n_epochs, batch_size, datasetname, iter, node_sampling_prob, feature_selection_prob, edge_dropout_prob)
+            n_epochs, batch_size, datasetname, iter, node_sampling_prob, feature_selection_prob, edge_dropout_prob, num_classifiers)
         wandb.log({
             f"fold_1_iter_{iter}_train_loss": np.mean(train_losses),
             f"fold_1_iter_{iter}_val_loss": np.mean(val_losses),
@@ -383,10 +399,10 @@ if __name__ == "__main__":
         UR_F1.append((F4_0 + F4_1) / 2)
     print("Total_Test_Accuracy: {:.4f}|NR F1: {:.4f}|FR F1: {:.4f}|TR F1: {:.4f}|UR F1: {:.4f}".format(
         sum(test_accs) / iterations, sum(NR_F1) / iterations, sum(FR_F1) / iterations, sum(TR_F1) / iterations, sum(UR_F1) / iterations))
-    final_train_loss = sum(fold_losses) / iterations
+    final_loss = sum(fold_losses) / iterations
     wandb.log({
         "final_test_accuracy": sum(test_accs) / iterations,
-        "final_train_loss": final_train_loss,
+        "final_loss": final_loss,
         "final_nr_f1": sum(NR_F1) / iterations,
         "final_fr_f1": sum(FR_F1) / iterations,
         "final_tr_f1": sum(TR_F1) / iterations,
