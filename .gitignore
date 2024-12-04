@@ -1,2 +1,4 @@
 data/Twitter15graph/*
 wandb/*
+*.m
+__pycache__/
