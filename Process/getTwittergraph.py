@@ -112,6 +112,10 @@ def main(obj):
     print(len(labelDic))
     print(l1, l2, l3, l4)
 
+
+    output_dir = os.path.join(cwd, 'data', obj + 'graph')
+    os.makedirs(output_dir, exist_ok=True)  # Create directory if it doesn't exist
+
     def loadEid(event,id,y):
         if event is None:
             return None
