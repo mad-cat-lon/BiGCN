@@ -1,3 +1,17 @@
+# CISC 452 Instructions
+## Installation
+`conda create -n cisc452 python=3.9.19`
+
+`conda activate cisc452`
+
+`pip install -r reqs.txt`
+
+## Generating graph data files for Twitter15
+`python Process/getTwittergraph.py Twitter15`
+
+## Running the code
+`python RF_BiGCN_Twitter.py`
+
 # Paper of the source codes released:  
 Tian Bian, Xi Xiao, Tingyang Xu, Peilin Zhao, Wenbing Huang, Yu Rong, Junzhou Huang. Rumor Detectionon Social Media with Bi-Directional Graph Convolutional Networks. AAAI 2020.
 
