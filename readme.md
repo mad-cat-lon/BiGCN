@@ -12,6 +12,8 @@
 ## Running the code
 `python RF_BiGCN_Twitter.py`
 
+Make sure `WANDB_ENABLED` is `False` in `RF_BiGCN_Twitter.py`
+
 # Paper of the source codes released:  
 Tian Bian, Xi Xiao, Tingyang Xu, Peilin Zhao, Wenbing Huang, Yu Rong, Junzhou Huang. Rumor Detectionon Social Media with Bi-Directional Graph Convolutional Networks. AAAI 2020.
 
